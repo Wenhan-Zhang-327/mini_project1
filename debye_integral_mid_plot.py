@@ -151,13 +151,14 @@ def addLinearPhase(mask,tilt):
 
     return mask   
 def debyr_integral(beam,alpha,lam,f,E_x,E_y): 
-    lims = np.linspace(-1,1,512)
+    w = beam.shape[0]
+    lims = np.linspace(-1,1,w)
     x, y = np.meshgrid(lims,lims)
     z = f
     k = 2*pi/lam
     r = sqrt(x**2+y**2)
     phi = arctan2(y,x)
-    intensity = np.zeros([512,512])
+    intensity = np.zeros([w,w])
     
 
     def midpoint_double1(f, a, b, c, d, nx, ny):
@@ -184,11 +185,11 @@ def debyr_integral(beam,alpha,lam,f,E_x,E_y):
         ez = a_theta*(-q3)*(E_x*cos(psi)+E_y*sin(psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*beam
         return (ex,ey,ez)
         
-    Ex = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[0], 0, alpha, 0, 2*pi, 20, 20))
-    Ey = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[1], 0, alpha, 0, 2*pi, 20, 20))
-    Ez = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[2], 0, alpha, 0, 2*pi, 20, 20))
+    Ex = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[0], 0, alpha, 0, 2*pi, 5, 5))
+    Ey = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[1], 0, alpha, 0, 2*pi, 5, 5))
+    Ez = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[2], 0, alpha, 0, 2*pi, 5, 5))
     
-    intensity += (Ex**2 + Ey**2 + Ez**2)
+    intensity += (Ex**2+Ey**2+Ez**2)
     return intensity
 
 mask = getPhaseMask(512,0,0,0,0)
@@ -197,11 +198,18 @@ mask = addPhaseFeature(mask,'STED',1,0)
 pupil = getPupil(512,'Airy',0.8,0.4)
 
 beam = pupil*np.exp(1j*mask)
-sample = debyr_integral(beam,0.47,0.68,2,1,1)
+beam = np.pad(beam, (512, 512), 'constant', constant_values=0)
+sample = debyr_integral(beam,0.45*pi,0.68,2e8,1,0)
 plt.figure(figsize=(10, 10))
 
 
 centre = np.shape(sample)[1]/2
-lim_up = int(centre+255)
-lim_down = int(centre-256)
+lim_up = int(centre+500)
+lim_down = int(centre-500)
+plt.subplot(1,3,1)
 plt.imshow(sample[lim_down:lim_up,lim_down:lim_up],cmap = 'gray')
+plt.subplot(1,3,2)
+plt.imshow(pupil,cmap = 'gray')
+plt.subplot(1,3,3)
+plt.imshow(mask,cmap = 'gray')
+plt.show()
