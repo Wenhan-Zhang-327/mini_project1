@@ -143,7 +143,7 @@ def getPupil(theta,psi,f,beam,Z1,Z2):
 def beam_sphere(theta,psi,f):
     mask = getPhaseMask(theta,psi,f,0,0,0,0)
     mask = addPhaseFeature(mask,theta,psi,f,'STED',1,0)
-    pupil = getPupil(theta,psi,f,'Gaussian',0.8,0.4)
+    pupil = getPupil(theta,psi,f,'Airy',0.8,0.4)
     beam = pupil*np.exp(1j*mask)
     return beam
    
