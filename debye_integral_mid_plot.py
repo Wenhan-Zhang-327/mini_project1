@@ -128,11 +128,8 @@ def getPupil(theta,psi,f,beam,Z1,Z2):
 
 #     return newPupil
 
-# def addLinearPhase(mask,tilt):
-
-#     w = mask.shape[0]
-#     lims = np.linspace(-1,1,w)
-#     x, y = np.meshgrid(lims,lims)
+# def addLinearPhase(mask,f,theta,psi,tilt):
+#     x = f*sin(theta)*cos(psi)   
 #     linPhase = x*tilt
 #     linPhase = linPhase % (2 * np.pi) -np.pi
 #     mask = mask + linPhase
@@ -143,13 +140,13 @@ def getPupil(theta,psi,f,beam,Z1,Z2):
 def beam_sphere(theta,psi,f):
     mask = getPhaseMask(theta,psi,f,0,0,0,0)
     mask = addPhaseFeature(mask,theta,psi,f,'STED',1,0)
-    pupil = getPupil(theta,psi,f,'Airy',0.8,0.4)
+    pupil = getPupil(theta,psi,f,'Airy',58,84)
     beam = pupil*np.exp(1j*mask)
     return beam
    
 def debyr_integral(alpha,lam,f,E_x,E_y): 
     w = 512
-    lims = np.linspace(-10,10,w)
+    lims = np.linspace(-2,2,w)
     x, y = np.meshgrid(lims,lims)
     z = 0
     k = 2*pi/lam
@@ -186,11 +183,11 @@ def debyr_integral(alpha,lam,f,E_x,E_y):
         
         
         
-    Ex = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[0], 0, alpha, 0, 2*pi, 20, 20))
-    Ey = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[1], 0, alpha, 0, 2*pi, 20, 20))
-    Ez = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[2], 0, alpha, 0, 2*pi, 20, 20))
+    Ex = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[0], 0, alpha, 0, 2*pi, 40, 40))
+    Ey = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[1], 0, alpha, 0, 2*pi, 40, 40))
+    Ez = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[2], 0, alpha, 0, 2*pi, 40, 40))
     
-    intensity += (Ex**2+Ey**2+Ez**2)
+    intensity += (Ex**2)
     return intensity
 
 # mask = getPhaseMask(512,1,0,0,0,0)[0]
@@ -202,7 +199,7 @@ def debyr_integral(alpha,lam,f,E_x,E_y):
 
 # beam = pupil*np.exp(1j*mask)
 #beam = np.pad(beam, (512, 512), 'constant', constant_values=0)
-sample = debyr_integral(1,0.68,5,1,1)
+sample = debyr_integral(1.4,0.68,100,8,0)
 #sample = np.pad(sample, (512, 512), 'constant', constant_values=0)
 plt.figure(figsize=(10, 10))
 
