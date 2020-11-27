@@ -1,6 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from numpy import exp,pi,sin,cos,sqrt,arctan2,arcsin     
+from numpy import exp,pi,sin,cos,sqrt,arctan2,tan    
 def getPhaseMask(theta,psi,f,z1,z2,z3,z4):
     """
     The function to calculate the phase mask to reproduce the 4 main aberations for high NA objectives
@@ -68,7 +68,7 @@ def addPhaseFeature(mask,theta,psi,f,feature,Z1,Z2):
         
     return mask
 
-def getPupil(theta,psi,f,beam,Z1,Z2):
+def getPupil(theta,psi,f,beam,Z1,Z2,centre):
     """
     Calculates the beam amplitude at the back of the lens
     ----------
@@ -78,59 +78,51 @@ def getPupil(theta,psi,f,beam,Z1,Z2):
     beam: type of beam to use
     Z1: variable parameter
     Z2: variable parameter
-    
+    centre: set the shift of spot    
     Returns
     -------
     mask:
         W x W square array containing the altered phase mask
     
     """
-
-    pupil = 0
     
+    rho = sqrt(f**2+centre**2)*tan(theta)
+    pupil = 0
     if beam == 'Gaussian':
 
-        pupil = np.exp(-(f*np.sin(theta))**2/(2*Z1**2))
+        pupil = np.exp(-(rho)**2/(2*Z1**2))
     
     elif beam == 'Airy':
 
-        if Z2<f*np.sin(theta)<Z1:
+        if Z2**2<(rho)**2+2*centre*rho*cos(psi)+centre**2<Z1**2:
             pupil = 1
         else:
             pupil = 0
                 
 
-    # elif beam == 'SIM':
+    elif beam == 'SIM':
 
-    #     pupil[rho<Z1] = 1
-    #     pupil = np.roll(pupil,(int(Z2*w))) + np.roll(pupil,(-int(Z2*w)))
+        if ((rho)**2+2*centre*rho*cos(psi)+centre**2<Z1**2)or(((rho)**2-2*centre*rho*cos(psi)+centre**2<Z1**2)):
+            pupil = 1
+        else:
+            pupil = 0
 
-    # elif beam =='SPIM':
+    elif beam =='SPIM':
 
-    #     pupil[rho<Z1] = 1
-    #     pupil = np.roll(pupil,(int(Z2*w)))
+        if (rho)**2+2*centre*rho*cos(psi)+centre**2<Z1**2:
+            pupil = 1
+        else:
+            pupil = 0
 
     else:
-        pupil = 1
+        if rho<Z1:
+            pupil = 1
+        else:
+            pupil = 0
 
     # pupil = pupil/np.amax(pupil)
 
     return pupil
-
-# def shiftSpot(pupil, beamCentre):
-
-#     w = pupil.shape[0]
-#     padLength = int(np.round(w/2))
-#     lims = np.linspace(-1,1,w)
-#     x, y = np.meshgrid(lims,lims)
-#     rho = np.sqrt(x**2 + y**2) 
-#     pupil[rho>1]=0
-#     pupil = pupil[::2,::2]
-#     newPupil = np.pad(pupil, ((padLength, padLength), (padLength, padLength)), 'constant')
-#     newPupil = np.roll(newPupil,int(beamCentre*padLength))
-
-
-#     return newPupil
 
 def addLinearPhase(mask,f,theta,psi,tilt):
     x = f*sin(theta)*cos(psi)   
@@ -144,8 +136,8 @@ def addLinearPhase(mask,f,theta,psi,tilt):
 def beam_sphere(theta,psi,f):
     mask = getPhaseMask(theta,psi,f,0,0,0,0)
     mask = addPhaseFeature(mask,theta,psi,f,'STED',1,0)
-    mask = addLinearPhase(mask,f,theta,psi,0.5)
-    pupil = getPupil(theta,psi,f,'Airy',5,4)
+    mask = addLinearPhase(mask,f,theta,psi,0)
+    pupil = getPupil(theta,psi,f,'SIM',3,4,4)
     beam = pupil*np.exp(1j*mask)
     return (beam,mask,pupil)
    
@@ -201,9 +193,9 @@ def debyr_integral(alpha,lam,f,E_x,E_y):
         
         
         
-    Ex = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[0], 0, alpha, 0, 2*pi, 20, 20))
-    Ey = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[1], 0, alpha, 0, 2*pi, 20, 20))
-    Ez = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[2], 0, alpha, 0, 2*pi, 20, 20))
+    Ex = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[0], 0, alpha, 0, 2*pi, 40, 40))
+    Ey = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[1], 0, alpha, 0, 2*pi, 40, 40))
+    Ez = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[2], 0, alpha, 0, 2*pi, 40, 40))
     
     intensity += (Ex**2+Ey**2+Ez**2)
     return intensity
@@ -228,8 +220,8 @@ def plotPupil(f,w):
     Generate the plot of pupil
     
     """
-    x = np.linspace(-4*f,4*f,w)
-    y = np.linspace(-4*f,4*f,w)
+    x = np.linspace(-f,f,w)
+    y = np.linspace(-f,f,w)
     pupil1 = np.zeros([w,w])
     for i in range(w):
         for j in range(w):
@@ -238,7 +230,7 @@ def plotPupil(f,w):
             pupil1[j,i] += beam_sphere(theta,psi,f)[2]
     return pupil1
 
-sample = debyr_integral(0.7,0.68,10,0,8)
+sample = debyr_integral(1,0.68,10,8,0)
 mask1 = plotPhaseMask(10,512)
 pupil1 = plotPupil(10,512)
 plt.figure(figsize=(10, 10))
