@@ -68,7 +68,7 @@ def addPhaseFeature(mask,theta,psi,f,feature,Z1,Z2):
         
     return mask
 
-def getPupil(theta,psi,f,beam,Z1,Z2,centre):
+def getPupil(theta,psi,f,beam,Z1,Z2):
     """
     Calculates the beam amplitude at the back of the lens
     ----------
@@ -86,30 +86,30 @@ def getPupil(theta,psi,f,beam,Z1,Z2,centre):
     
     """
     
-    rho = sqrt(f**2+centre**2)*tan(theta)
+    
     pupil = 0
     if beam == 'Gaussian':
 
-        pupil = np.exp(-(rho)**2/(2*Z1**2))
+        pupil = np.exp(-(f*tan(theta))**2/(2*Z1**2))
     
     elif beam == 'Airy':
 
-        if Z2**2<(rho)**2+2*centre*rho*cos(psi)+centre**2<Z1**2:
+        if Z2<f*tan(theta)<Z1:
             pupil = 1
         else:
             pupil = 0
                 
 
     elif beam == 'SIM':
-
-        if ((rho)**2+2*centre*rho*cos(psi)+centre**2<Z1**2)or(((rho)**2-2*centre*rho*cos(psi)+centre**2<Z1**2)):
+        rho = sqrt(f**2+Z2*2)*tan(theta)
+        if ((rho)**2+2*Z2*rho*cos(psi)+Z2**2<Z1**2)or(((rho)**2-2*Z2*rho*cos(psi)+Z2**2<Z1**2)):
             pupil = 1
         else:
             pupil = 0
 
     elif beam =='SPIM':
-
-        if (rho)**2+2*centre*rho*cos(psi)+centre**2<Z1**2:
+        rho = sqrt(f**2+Z2**2)*tan(theta)
+        if (rho)**2+2*Z2*rho*cos(psi)+Z2**2<Z1**2:
             pupil = 1
         else:
             pupil = 0
@@ -133,11 +133,22 @@ def addLinearPhase(mask,f,theta,psi,tilt):
 
     return mask
 
-def beam_sphere(theta,psi,f):
+def beam_sphere(theta,psi,f,a):
+    r = f*np.tan(theta)
+    x=np.cos(psi)*r
+    y=np.sin(psi)*r
+
+
+
+    x_new = x+a
+    r_new = np.sqrt(x_new**2 + y**2)
+    theta = np.arctan2(r_new,a)
+    psi = np.arctan2(y,x_new)
+    
     mask = getPhaseMask(theta,psi,f,0,0,0,0)
     mask = addPhaseFeature(mask,theta,psi,f,'STED',1,0)
     mask = addLinearPhase(mask,f,theta,psi,0)
-    pupil = getPupil(theta,psi,f,'SIM',3,4,4)
+    pupil = getPupil(theta,psi,f,'SIM',3,4)
     beam = pupil*np.exp(1j*mask)
     return (beam,mask,pupil)
    
@@ -186,9 +197,9 @@ def debyr_integral(alpha,lam,f,E_x,E_y):
             
         a_theta = 0.5*sqrt(cos(theta))
             
-        ex = a_theta*(E_x*(q1+q2*cos(2*psi))+E_y*q2*sin(2*psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*sin(theta)*beam_sphere(theta,psi,f)[0]
-        ey = a_theta*(E_y*(q1-q2*cos(2*psi))+E_x*q2*sin(2*psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*sin(theta)*beam_sphere(theta,psi,f)[0]
-        ez = a_theta*(-q3)*(E_x*cos(psi)+E_y*sin(psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*sin(theta)*beam_sphere(theta,psi,f)[0]
+        ex = a_theta*(E_x*(q1+q2*cos(2*psi))+E_y*q2*sin(2*psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*sin(theta)*beam_sphere(theta,psi,f,4)[0]
+        ey = a_theta*(E_y*(q1-q2*cos(2*psi))+E_x*q2*sin(2*psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*sin(theta)*beam_sphere(theta,psi,f,4)[0]
+        ez = a_theta*(-q3)*(E_x*cos(psi)+E_y*sin(psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*sin(theta)*beam_sphere(theta,psi,f,4)[0]
         return (ex,ey,ez)
         
         
@@ -213,7 +224,7 @@ def plotPhaseMask(f,w):
         for j in range(w):
             theta = arctan2(np.sqrt(x[i]**2 + y[j]**2),f) 
             psi = np.arctan2(y[j], x[i])
-            mask1[j,i] += beam_sphere(theta,psi,f)[1]
+            mask1[j,i] += beam_sphere(theta,psi,f,4)[1]
     return mask1
 def plotPupil(f,w):
     """
@@ -227,7 +238,7 @@ def plotPupil(f,w):
         for j in range(w):
             theta = arctan2(np.sqrt(x[i]**2 + y[j]**2),f) 
             psi = np.arctan2(y[j], x[i])
-            pupil1[j,i] += beam_sphere(theta,psi,f)[2]
+            pupil1[j,i] += beam_sphere(theta,psi,f,4)[2]
     return pupil1
 
 sample = debyr_integral(1,0.68,10,8,0)
