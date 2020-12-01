@@ -113,9 +113,18 @@ def getPupil(theta,psi,f,beam,Z1,Z2):
             pupil = 1
         else:
             pupil = 0
+    elif beam == 'offset':
+
+        x = f*tan(theta)*cos(psi)
+        y = f*tan(theta)*sin(psi)
+        x = x+Z1
+        if sqrt(x**2 + y**2)<Z2:
+            pupil = 1
+        else:
+            pupil = 0
 
     else:
-        if rho<Z1:
+        if f*tan(theta)<Z1:
             pupil = 1
         else:
             pupil = 0
@@ -133,26 +142,26 @@ def addLinearPhase(mask,f,theta,psi,tilt):
 
     return mask
 
-def beam_sphere(theta,psi,f,a):
+def beam_sphere(theta,psi,f,centre,tilt):
     r = f*np.tan(theta)
     x=np.cos(psi)*r
     y=np.sin(psi)*r
 
 
 
-    x_new = x+a
+    x_new = x+centre
     r_new = np.sqrt(x_new**2 + y**2)
-    theta = np.arctan2(r_new,a)
+    theta = np.arctan2(r_new,f)
     psi = np.arctan2(y,x_new)
     
     mask = getPhaseMask(theta,psi,f,0,0,0,0)
-    mask = addPhaseFeature(mask,theta,psi,f,'STED',1,0)
-    mask = addLinearPhase(mask,f,theta,psi,0)
-    pupil = getPupil(theta,psi,f,'SIM',3,4)
+    mask = addPhaseFeature(mask,theta,psi,f,'',0,0)
+    mask = addLinearPhase(mask,f,theta,psi,tilt)
+    pupil = getPupil(theta,psi,f,'Airy',15,5)
     beam = pupil*np.exp(1j*mask)
     return (beam,mask,pupil)
    
-def debyr_integral(alpha,lam,f,E_x,E_y): 
+def debyr_integral(alpha,lam,f,E_x,E_y,centre,tilt): 
     """
     Calculates the debye integral and get intensity of beams after passing through lens
     ----------
@@ -169,8 +178,8 @@ def debyr_integral(alpha,lam,f,E_x,E_y):
     """
     w = 512
     lims = np.linspace(-2,2,w)
-    x, y = np.meshgrid(lims,lims)
-    z = 0
+    x, z = np.meshgrid(lims,lims)
+    y = 0
     k = 2*pi/lam
     r = sqrt(x**2+y**2)
     phi = arctan2(y,x)
@@ -197,9 +206,9 @@ def debyr_integral(alpha,lam,f,E_x,E_y):
             
         a_theta = 0.5*sqrt(cos(theta))
             
-        ex = a_theta*(E_x*(q1+q2*cos(2*psi))+E_y*q2*sin(2*psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*sin(theta)*beam_sphere(theta,psi,f,4)[0]
-        ey = a_theta*(E_y*(q1-q2*cos(2*psi))+E_x*q2*sin(2*psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*sin(theta)*beam_sphere(theta,psi,f,4)[0]
-        ez = a_theta*(-q3)*(E_x*cos(psi)+E_y*sin(psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*sin(theta)*beam_sphere(theta,psi,f,4)[0]
+        ex = a_theta*(E_x*(q1+q2*cos(2*psi))+E_y*q2*sin(2*psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*sin(theta)*beam_sphere(theta,psi,f,centre,tilt)[0]
+        ey = a_theta*(E_y*(q1-q2*cos(2*psi))+E_x*q2*sin(2*psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*sin(theta)*beam_sphere(theta,psi,f,centre,tilt)[0]
+        ez = a_theta*(-q3)*(E_x*cos(psi)+E_y*sin(psi))*(-1j)/lam*f*exp(1j*(k*z*cos(theta)+k*r*sin(theta)*cos(psi-phi)))*sin(theta)*beam_sphere(theta,psi,f,centre,tilt)[0]
         return (ex,ey,ez)
         
         
@@ -212,7 +221,7 @@ def debyr_integral(alpha,lam,f,E_x,E_y):
     return intensity
 
 
-def plotPhaseMask(f,w):
+def plotPhaseMask(f,w,centre,tilt):
     """
     Generate the plot of phase mask
     
@@ -224,9 +233,9 @@ def plotPhaseMask(f,w):
         for j in range(w):
             theta = arctan2(np.sqrt(x[i]**2 + y[j]**2),f) 
             psi = np.arctan2(y[j], x[i])
-            mask1[j,i] += beam_sphere(theta,psi,f,4)[1]
+            mask1[j,i] += beam_sphere(theta,psi,f,centre,tilt)[1]
     return mask1
-def plotPupil(f,w):
+def plotPupil(f,w,centre,tilt):
     """
     Generate the plot of pupil
     
@@ -238,12 +247,12 @@ def plotPupil(f,w):
         for j in range(w):
             theta = arctan2(np.sqrt(x[i]**2 + y[j]**2),f) 
             psi = np.arctan2(y[j], x[i])
-            pupil1[j,i] += beam_sphere(theta,psi,f,4)[2]
+            pupil1[j,i] += beam_sphere(theta,psi,f,centre,tilt)[2]
     return pupil1
 
-sample = debyr_integral(1,0.68,10,8,0)
-mask1 = plotPhaseMask(10,512)
-pupil1 = plotPupil(10,512)
+sample = debyr_integral(1,0.68,10,8,0,8,0)
+mask1 = plotPhaseMask(10,512,8,0)
+pupil1 = plotPupil(10,512,8,0)
 plt.figure(figsize=(10, 10))
 
 
