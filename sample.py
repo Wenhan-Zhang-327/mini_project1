@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from numpy import exp,pi,sin,cos,sqrt,arctan2,tan   
-
+import tifffile as tiff
 def getPhaseMask(theta,psi,f,z1,z2,z3,z4):
     """
     The function to calculate the phase mask to reproduce the 4 main aberations for high NA objectives
@@ -152,7 +152,7 @@ def addLinearPhase(mask,f,theta,psi,tilt):
 
     return mask
 
-def beam_sphere(mask,pupil,theta,psi,f,a):
+def beam_sphere(theta,psi,f):
 
     r = f*np.tan(theta)
     x=np.cos(psi)*r
@@ -160,7 +160,7 @@ def beam_sphere(mask,pupil,theta,psi,f,a):
 
 
 
-    x_new = x+a
+    x_new = x
     r_new = np.sqrt(x_new**2 + y**2)
     theta = np.arctan2(r_new,f)
     psi = np.arctan2(y,x_new)
@@ -222,20 +222,71 @@ def debye_integral(z,w,alpha,lam,f,E_x,E_y):
         
         
         
-    Ex = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[0], 0, alpha, 0, 2*pi, 20, 20))
-    Ey = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[1], 0, alpha, 0, 2*pi, 20, 20))
-    Ez = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[2], 0, alpha, 0, 2*pi, 20, 20))
+    Ex = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[0], 0, alpha, 0, 2*pi, 40, 40))
+    Ey = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[1], 0, alpha, 0, 2*pi, 40, 40))
+    Ez = np.abs(midpoint_double1(lambda theta, psi: e(theta,psi)[2], 0, alpha, 0, 2*pi, 40, 40))
     
     intensity += (Ex**2+Ey**2+Ez**2)
     return intensity
 
 
-w = 160
+# def plotPhaseMask(f,w):
+#     """
+#     Generate the plot of phase mask
+    
+#     """
+#     x = np.linspace(-1,1,w)
+#     y = np.linspace(-1,1,w)
+#     mask1 = np.zeros([w,w])
+#     for i in range(w):
+#         for j in range(w):
+#             theta = arctan2(np.sqrt(x[i]**2 + y[j]**2),f) 
+#             psi = np.arctan2(y[j], x[i])
+#             mask1[j,i] += beam_sphere(theta,psi,f)[1]
+#     return mask1
+# def plotPupil(f,w):
+#     """
+#     Generate the plot of pupil
+    
+#     """
+#     x = np.linspace(-4*f,4*f,w)
+#     y = np.linspace(-4*f,4*f,w)
+#     pupil1 = np.zeros([w,w])
+#     for i in range(w):
+#         for j in range(w):
+#             theta = arctan2(np.sqrt(x[i]**2 + y[j]**2),f) 
+#             psi = np.arctan2(y[j], x[i])
+#             pupil1[j,i] += beam_sphere(theta,psi,f)[2]
+#     return pupil1
+
+
+
+
+# mask1 = plotPhaseMask(10,512)
+# pupil1 = plotPupil(10,512)
+# plt.figure(figsize=(10, 10))
+
+
+# centre = np.shape(sample)[1]/2
+# lim_up = int(centre+200)
+# lim_down = int(centre-200)
+# plt.subplot(1,3,1)
+# plt.imshow(sample[lim_down:lim_up,lim_down:lim_up],cmap = 'gray')
+# plt.subplot(1,3,2)
+# plt.imshow(pupil1,cmap = 'gray')
+# plt.subplot(1,3,3)
+# plt.imshow(mask1,cmap = 'gray')
+# plt.show()
+w = 512
 z = np.linspace(-10,10,w)
 output_array = np.zeros((w,w,w))
 for i in range(w):
     output_array[:,:,i] = debye_integral(z[i],w,1.2,0.4,10,1,0)
    
-ele = np.array([[[1,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]])
-ele2 = np.tile(ele, (20,20,20)) 
-sample_array = np.pad(ele2, (40,40), 'constant', constant_values=0) 
+# ele = np.array([[[1,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]])
+# ele2 = np.tile(ele, (20,20,20)) 
+# ele3 = np.pad(ele2, (40,40), 'constant', constant_values=0) 
+
+# out_put = np.load('out_put.npy')
+# out_put_a = np.multiply(np.transpose(out_put,(2,0,1)),ele3)
+# tiff.imwrite('out_put1.tif',out_put_a,photometric='minisblack')
