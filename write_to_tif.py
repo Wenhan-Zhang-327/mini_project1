@@ -17,7 +17,7 @@ out_put = np.load('out_put.npy')
 PSF = tiff.imread('PSF BW.tif')
 OTF = np.fft.fftshift(np.fft.fftn(PSF))
 image_sams = np.zeros((512,512,512))
-for i in range(353):
+for i in range(b):
     sample = np.roll(ele3,i,axis=0)
     out_put_sample = np.multiply(out_put,sample)
     sampleF = np.fft.fftshift(np.fft.fftn(out_put_sample))
