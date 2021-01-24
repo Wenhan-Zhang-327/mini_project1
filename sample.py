@@ -160,7 +160,7 @@ def beam_sphere(theta,psi,f):
 
 
 
-    x_new = x
+    x_new = x + 4
     r_new = np.sqrt(x_new**2 + y**2)
     theta = np.arctan2(r_new,f)
     psi = np.arctan2(y,x_new)
@@ -168,7 +168,7 @@ def beam_sphere(theta,psi,f):
     mask = getPhaseMask(theta,psi,f,0,0,0,0)
     mask = addPhaseFeature(mask,theta,psi,f,'',0,0)
     mask = addLinearPhase(mask,f,theta,psi,0)
-    pupil = getPupil(theta,psi,f,'', 8, 0.5)
+    pupil = getPupil(theta,psi,f,'', 3, 0)
     beam = pupil*np.exp(1j*mask)
     return (beam,mask,pupil)
    
@@ -279,9 +279,9 @@ def debye_integral(z,w,alpha,lam,f,E_x,E_y):
 # plt.show()
 w = 512
 z = np.linspace(-10,10,w)
-output_array = np.zeros((w,w,w))
-for i in range(w):
-    output_array[:,:,i] = debye_integral(z[i],w,1.2,0.4,10,1,0)
+output_array1 = np.zeros((w,w,512))
+for i in range(512):
+    output_array1[:,:,i] = debye_integral(z[i],w,1.2,0.5,10,1,0)
    
 # ele = np.array([[[1,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]])
 # ele2 = np.tile(ele, (20,20,20)) 
